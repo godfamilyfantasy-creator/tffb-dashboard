@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TFFB Slots Dashboard</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:"Inter",sans-serif; background:#0a0e17; color:#e0e0e0; min-height:100vh; }
+.header { background:linear-gradient(135deg,#1a1f35,#0d1225); padding:30px 40px; border-bottom:1px solid #1e2740; display:flex; justify-content:space-between; align-items:center; }
+.header-left h1 { font-size:32px; font-weight:800; color:#34d399; }
+.header-left p { color:#6b7280; margin-top:4px; font-size:14px; }
+.refresh-btn { background:#1e2740; border:1px solid #2d3a5c; color:#60a5fa; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500; transition:background 0.2s; }
+.refresh-btn:hover { background:#2d3a5c; }
+.container { max-width:1400px; margin:0 auto; padding:30px 40px; }
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:30px; }
+.stat-card { background:linear-gradient(135deg,#141829,#1a1f35); border:1px solid #1e2740; border-radius:16px; padding:24px; }
+.stat-card .label { font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+.stat-card .value { font-size:32px; font-weight:800; margin-top:8px; }
+.stat-card .sub { font-size:13px; color:#6b7280; margin-top:4px; }
+.green { color:#34d399; } .red { color:#f87171; } .gold { color:#f0c040; } .blue { color:#60a5fa; } .white { color:#e0e0e0; }
+
+.section { margin-bottom:30px; }
+.section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.section-header h2 { font-size:20px; font-weight:700; color:#f0f0f0; }
+
+/* Today strip */
+.today-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(115px,1fr)); gap:12px; margin-bottom:30px; }
+.today-card { background:#141829; border:1px solid #1e2740; border-radius:12px; padding:16px; text-align:center; transition:border-color 0.2s; }
+.today-card:hover { border-color:#2d3a5c; }
+.today-card .name { font-size:12px; font-weight:600; color:#9ca3af; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+.today-card .pnl { font-size:20px; font-weight:800; }
+.today-card.total { border-color:#f0c040; background:linear-gradient(135deg,#1a1a10,#1a1f35); }
+.today-card.total .name { color:#f0c040; }
+.today-card .no-trade { font-size:11px; color:#4b5563; margin-top:2px; }
+
+/* Humans vs Random */
+.vs-section { display:grid; grid-template-columns:1fr 80px 1fr; gap:0; margin-bottom:30px; align-items:center; }
+.vs-card { background:#141829; border:1px solid #1e2740; border-radius:16px; padding:30px; text-align:center; }
+.vs-card h3 { font-size:14px; margin-bottom:12px; color:#6b7280; text-transform:uppercase; letter-spacing:1px; }
+.vs-card .big { font-size:42px; font-weight:800; }
+.vs-divider { text-align:center; font-size:24px; font-weight:800; color:#2d3a5c; }
+
+/* Leaderboard */
+.leaderboard { background:#141829; border:1px solid #1e2740; border-radius:16px; overflow:hidden; }
+.lb-row { display:grid; grid-template-columns:50px 50px 1fr 80px 120px 80px 110px 110px; padding:14px 20px; border-bottom:1px solid #1e2740; align-items:center; transition:background 0.2s; }
+.lb-row:hover { background:#1a1f35; }
+.lb-header { background:#0d1225; font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+.lb-header:hover { background:#0d1225; }
+.rank { font-size:20px; font-weight:800; }
+.rank.gold { color:#f0c040; } .rank.silver { color:#c0c0c0; } .rank.bronze { color:#cd7f32; }
+.player-name { font-weight:600; font-size:15px; }
+.pnl { font-weight:700; font-size:15px; }
+.bar-container { display:flex; gap:4px; align-items:center; }
+.bar { height:8px; border-radius:4px; min-width:2px; }
+.bar.win { background:#34d399; } .bar.loss { background:#f87171; }
+
+/* Player cards */
+.player-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; margin-bottom:30px; }
+.p-card { background:#141829; border:1px solid #1e2740; border-radius:16px; padding:24px; transition:border-color 0.2s; }
+.p-card:hover { border-color:#2d3a5c; }
+.p-card .p-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.p-card .p-rank { font-size:12px; color:#6b7280; font-weight:600; }
+.p-card .p-name { font-size:18px; font-weight:700; }
+.p-card .p-pnl { font-size:24px; font-weight:800; }
+.p-card .p-stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.p-card .p-stat-label { font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; }
+.p-card .p-stat-value { font-size:15px; font-weight:600; margin-top:2px; }
+.p-card .p-bar { height:6px; border-radius:3px; background:#1e2740; margin-top:16px; overflow:hidden; display:flex; }
+.p-card .p-bar .win { background:#34d399; } .p-card .p-bar .loss { background:#f87171; }
+
+/* Trades table */
+.trades-table { background:#141829; border:1px solid #1e2740; border-radius:16px; overflow:hidden; max-height:500px; overflow-y:auto; }
+.tt-row { display:grid; grid-template-columns:160px 100px 80px 80px 80px 100px 100px 100px; padding:10px 20px; border-bottom:1px solid #1e2740; font-size:13px; align-items:center; }
+.tt-header { background:#0d1225; font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:1px; font-weight:600; position:sticky; top:0; z-index:1; }
+.badge { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; display:inline-block; }
+.badge.win { background:rgba(52,211,153,0.15); color:#34d399; }
+.badge.loss { background:rgba(248,113,113,0.15); color:#f87171; }
+.badge.long { background:rgba(96,165,250,0.15); color:#60a5fa; }
+.badge.short { background:rgba(251,146,60,0.15); color:#fb923c; }
+
+/* Evaluation progress bar */
+.eval-bar-container { background:#141829; border:1px solid #1e2740; border-radius:16px; padding:24px; }
+.eval-labels { display:flex; justify-content:space-between; margin-bottom:12px; font-size:16px; font-weight:700; }
+.eval-bar-bg { height:24px; background:#1e2740; border-radius:12px; overflow:hidden; }
+.eval-bar-fill { height:100%; border-radius:12px; transition:width 0.5s ease; }
+.eval-pct { text-align:center; margin-top:8px; font-size:14px; color:#6b7280; font-weight:600; }
+
+.loading { text-align:center; padding:60px; color:#6b7280; font-size:18px; }
+.error { text-align:center; padding:60px; color:#f87171; font-size:16px; }
+.last-updated { font-size:12px; color:#4b5563; }
+.clickable { cursor:pointer; text-decoration:underline; text-decoration-color:#2d3a5c; text-underline-offset:3px; }
+.clickable:hover { text-decoration-color:#60a5fa; }
+
+/* Modal */
+.modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100; justify-content:center; align-items:center; }
+.modal-overlay.active { display:flex; }
+.modal { background:#141829; border:1px solid #1e2740; border-radius:20px; padding:32px; width:420px; max-width:90vw; position:relative; }
+.modal-close { position:absolute; top:16px; right:20px; background:none; border:none; color:#6b7280; font-size:24px; cursor:pointer; }
+.modal-close:hover { color:#e0e0e0; }
+.modal h2 { font-size:24px; font-weight:800; margin-bottom:4px; }
+.modal .modal-pnl { font-size:36px; font-weight:800; margin-bottom:20px; }
+.modal .modal-stats { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.modal .modal-bar { height:8px; border-radius:4px; background:#1e2740; margin-top:20px; overflow:hidden; display:flex; }
+.modal .modal-bar .win { background:#34d399; } .modal .modal-bar .loss { background:#f87171; }
+
+/* Avatars */
+.avatar { width:36px; height:36px; border-radius:50%; object-fit:cover; border:2px solid #2d3a5c; }
+.avatar-sm { width:28px; height:28px; border-radius:50%; object-fit:cover; border:1px solid #2d3a5c; }
+.avatar-lg { width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #f0c040; }
+.avatar-modal { width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid #2d3a5c; }
+.player-name-with-avatar { display:flex; align-items:center; gap:10px; }
+.trade-player { display:flex; align-items:center; gap:8px; font-weight:600; }
+
+/* Champion banner */
+.champion-banner { background:linear-gradient(135deg,#1a1a10,#2a2510,#1a1a10); border:1px solid #f0c040; border-radius:16px; padding:20px 30px; margin-bottom:30px; position:relative; overflow:hidden; cursor:pointer; transition:border-color 0.2s; }
+.champion-banner:hover { border-color:#ffd700; }
+.champion-banner::before { content:""; position:absolute; top:0; left:0; right:0; bottom:0; background:radial-gradient(ellipse at center, rgba(240,192,64,0.08) 0%, transparent 70%); pointer-events:none; }
+.champ-layout { display:flex; align-items:center; justify-content:center; gap:40px; position:relative; z-index:1; }
+.champ-avatar { width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid #f0c040; flex-shrink:0; }
+.champ-info { text-align:left; }
+.champion-banner .champ-label { font-size:12px; color:#f0c040; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:6px; }
+.champion-banner .champ-name { font-size:26px; font-weight:800; color:#f0f0f0; margin-bottom:2px; }
+.champion-banner .champ-pnl { font-size:32px; font-weight:800; }
+.champion-banner .champ-stats { display:flex; gap:20px; margin-top:8px; font-size:13px; color:#6b7280; }
+
+@media (max-width: 900px) {
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .player-cards { grid-template-columns:1fr; }
+  .vs-section { grid-template-columns:1fr; }
+  .vs-divider { display:none; }
+  .container { padding:20px; }
+  .header { padding:20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>TFFB Trade Challenge</h1>
+    <p>Office Trading Challenge Dashboard</p>
+  </div>
+  <div style="text-align:right">
+    <button class="refresh-btn" onclick="fetchData()">Refresh</button>
+    <div class="last-updated" id="lastUpdated"></div>
+  </div>
+</div>
+
+<div class="container" id="app">
+  <div class="loading">Loading data...</div>
+</div>
+
+<script>
+// ========== PASTE YOUR APPS SCRIPT URL HERE ==========
+var DATA_URL = "https://script.google.com/macros/s/AKfycbzMa71h0fFQ3Q48ZwmAxiQnvcC_K28GW6I6Nv1ag9mpJV4EalPxbofDQFci_26I4lSX/exec";
+// =====================================================
+
+function fetchData() {
+  document.getElementById("app").innerHTML = '<div class="loading">Loading data...</div>';
+  // Use JSONP to avoid CORS issues with Apps Script
+  var callbackName = 'jsonpCallback_' + Date.now();
+  window[callbackName] = function(data) {
+    renderDashboard(data);
+    document.getElementById("lastUpdated").textContent = "Updated: " + new Date().toLocaleTimeString();
+    delete window[callbackName];
+    var script = document.getElementById('jsonpScript');
+    if (script) script.remove();
+  };
+  var script = document.createElement('script');
+  script.id = 'jsonpScript';
+  script.src = DATA_URL + "?action=alldata&callback=" + callbackName;
+  script.onerror = function() {
+    document.getElementById("app").innerHTML = '<div class="error">Error loading data. Check Apps Script URL.</div>';
+  };
+  document.body.appendChild(script);
+}
+
+function renderDashboard(trades) {
+  var players = {};
+  var totalHumanPnl = 0, totalRandomPnl = 0, totalTrades = 0, totalWins = 0;
+  var today = new Date().toISOString().slice(0, 10);
+  var todayPnl = {};
+  var todayTotal = 0;
+  var todayTrades = 0;
+
+  // Drawdown tracking
+  var runningEquity = 0;
+  var peakEquity = 0;
+  var maxDrawdown = 0;
+  var currentDrawdown = 0;
+
+  trades.forEach(function(t) {
+    if (!players[t.player]) players[t.player] = {
+      name: t.player, pnl: 0, wins: 0, losses: 0, trades: 0,
+      randomPnl: 0, longs: 0, shorts: 0, bestDay: null, worstDay: null,
+      dailyPnl: {}, streak: 0, results: []
+    };
+    var p = players[t.player];
+    p.pnl += t.pnl;
+    p.trades++;
+    p.randomPnl += t.randomPnl;
+    if (t.pnl >= 0) { p.wins++; totalWins++; } else { p.losses++; }
+    if (t.direction === "LONG") p.longs++; else p.shorts++;
+    if (!p.dailyPnl[t.date]) p.dailyPnl[t.date] = 0;
+    p.dailyPnl[t.date] += t.pnl;
+    p.results.push(t.pnl >= 0 ? 1 : -1);
+    totalHumanPnl += t.pnl;
+    totalRandomPnl += t.randomPnl;
+    totalTrades++;
+    if (t.date === today) {
+      if (!todayPnl[t.player]) todayPnl[t.player] = 0;
+      todayPnl[t.player] += t.pnl;
+      todayTotal += t.pnl;
+      todayTrades++;
+    }
+
+    // Drawdown tracking (trade by trade)
+    runningEquity += t.pnl;
+    if (runningEquity > peakEquity) peakEquity = runningEquity;
+    var dd = peakEquity - runningEquity;
+    if (dd > maxDrawdown) maxDrawdown = dd;
+    currentDrawdown = dd;
+  });
+
+  // Best/worst day and streak
+  Object.values(players).forEach(function(p) {
+    var days = Object.entries(p.dailyPnl);
+    if (days.length > 0) {
+      p.bestDay = days.reduce(function(a, b) { return a[1] > b[1] ? a : b; })[1];
+      p.worstDay = days.reduce(function(a, b) { return a[1] < b[1] ? a : b; })[1];
+    }
+    var s = 0;
+    for (var i = p.results.length - 1; i >= 0; i--) {
+      if (i === p.results.length - 1) s = p.results[i];
+      else if (p.results[i] === (s > 0 ? 1 : -1)) s += p.results[i];
+      else break;
+    }
+    p.streak = s;
+  });
+
+  var sorted = Object.values(players).sort(function(a, b) { return b.pnl - a.pnl; });
+  globalPlayers = players;
+  var winRate = totalTrades > 0 ? (totalWins / totalTrades * 100).toFixed(1) : "0";
+  var humanWinning = totalHumanPnl > totalRandomPnl;
+
+  var html = "";
+
+  // ===== CHAMPION BANNER =====
+  if (sorted.length > 0) {
+    var champ = sorted[0];
+    var champWr = champ.trades > 0 ? (champ.wins / champ.trades * 100).toFixed(0) : 0;
+    html += '<div class="champion-banner clickable" onclick="showPlayerModal(\'' + champ.name + '\')">';
+    html += '<div class="champ-layout">';
+    html += '<img src="' + avatarUrl(champ.name) + '" class="champ-avatar">';
+    html += '<div class="champ-info">';
+    html += '<div class="champ-label">\uD83D\uDC51 Current Champion</div>';
+    html += '<div class="champ-name">' + champ.name + '</div>';
+    html += '<div class="champ-pnl ' + (champ.pnl >= 0 ? "green" : "red") + '">' + fmtDollarSigned(champ.pnl) + '</div>';
+    html += '<div class="champ-stats"><span>' + champ.trades + ' trades</span><span>' + champWr + '% win rate</span><span>' + champ.wins + 'W / ' + champ.losses + 'L</span></div>';
+    html += '</div></div></div>';
+  }
+
+  // Calculate aggregate daily PnL for best/worst day and trading days
+  var allDailyPnl = {};
+  trades.forEach(function(t) {
+    if (!allDailyPnl[t.date]) allDailyPnl[t.date] = 0;
+    allDailyPnl[t.date] += t.pnl;
+  });
+  var dailyEntries = Object.entries(allDailyPnl);
+  var bestDayEntry = dailyEntries.length > 0 ? dailyEntries.reduce(function(a,b){return a[1]>b[1]?a:b;}) : ["—",0];
+  var worstDayEntry = dailyEntries.length > 0 ? dailyEntries.reduce(function(a,b){return a[1]<b[1]?a:b;}) : ["—",0];
+  var tradingDays = dailyEntries.length;
+  var allDates = dailyEntries.map(function(d){return d[0];}).sort();
+  var calendarDays = 0;
+  if (allDates.length > 0) {
+    var firstDate = new Date(allDates[0]);
+    var todayDate = new Date();
+    calendarDays = Math.ceil((todayDate - firstDate) / (1000*60*60*24)) + 1;
+  }
+
+  // ===== HUMANS VS RANDOM =====
+  html += '<div class="vs-section">';
+  html += '<div class="vs-card"><h3>Humans</h3><div class="big ' + (totalHumanPnl >= 0 ? "green" : "red") + '">' + fmtDollar(totalHumanPnl) + '</div><p style="color:#6b7280;margin-top:8px">Total P&L</p></div>';
+  html += '<div class="vs-divider">VS</div>';
+  html += '<div class="vs-card"><h3>Random Coin Flip</h3><div class="big ' + (totalRandomPnl >= 0 ? "green" : "red") + '">' + fmtDollar(totalRandomPnl) + '</div><p style="color:#6b7280;margin-top:8px">Total P&L</p></div>';
+  html += "</div>";
+
+  // ===== STAT CARDS =====
+  html += '<div class="stats-grid">';
+  html += statCard("Total P&L", fmtDollar(totalHumanPnl), totalHumanPnl >= 0 ? "green" : "red", totalTrades + " total trades");
+  html += statCard("Win Rate", winRate + "%", parseFloat(winRate) >= 50 ? "green" : "red", totalWins + "W / " + (totalTrades - totalWins) + "L");
+  html += statCard("vs Random", fmtDollarSigned(totalHumanPnl - totalRandomPnl), humanWinning ? "green" : "red", "Random: " + fmtDollar(totalRandomPnl));
+  html += statCard("Today", fmtDollar(todayTotal), todayTotal >= 0 ? "green" : "red", todayTrades + " trades today");
+  html += "</div>";
+
+  // ===== DRAWDOWN STATS =====
+  html += '<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">';
+  html += statCard("Peak Equity", fmtDollarSigned(peakEquity), "green", "Highest account value");
+  html += statCard("Current Drawdown", fmtDollar(currentDrawdown), currentDrawdown > 0 ? "red" : "green", currentDrawdown > 0 ? (peakEquity > 0 ? (currentDrawdown/peakEquity*100).toFixed(1) + "% from peak" : "Below peak") : "At peak");
+  html += statCard("Max Drawdown", fmtDollar(maxDrawdown), "red", maxDrawdown > 0 && peakEquity > 0 ? (maxDrawdown/peakEquity*100).toFixed(1) + "% of peak" : "No drawdown");
+  html += "</div>";
+
+  // ===== BEST/WORST DAY & TRADING DAYS =====
+  html += '<div class="stats-grid">';
+  html += statCard("Best Day", fmtDollarSigned(bestDayEntry[1]), bestDayEntry[1] >= 0 ? "green" : "red", bestDayEntry[0]);
+  html += statCard("Worst Day", fmtDollarSigned(worstDayEntry[1]), worstDayEntry[1] >= 0 ? "green" : "red", worstDayEntry[0]);
+  html += statCard("Trading Days", tradingDays, "blue", "Days with trades");
+  html += statCard("Calendar Days", calendarDays, "blue", "Since " + (allDates.length > 0 ? allDates[0] : "—"));
+  html += "</div>";
+
+  // ===== EVALUATION PROGRESS & ACCOUNT FAILURE (combined tile) =====
+  var evalGoal = 3000;
+  var evalPct = Math.max(0, Math.min(100, (totalHumanPnl / evalGoal * 100)));
+  var evalColor = totalHumanPnl >= evalGoal ? "#34d399" : (totalHumanPnl >= 0 ? "#60a5fa" : "#f87171");
+  var failLimit = 2000;
+  var failPct = Math.max(0, Math.min(100, (currentDrawdown / failLimit * 100)));
+  var failColor = currentDrawdown >= failLimit ? "#f87171" : (currentDrawdown > failLimit * 0.7 ? "#fb923c" : "#60a5fa");
+
+  html += '<div class="section"><div class="eval-bar-container">';
+  html += '<h3 style="color:#f0f0f0;font-size:16px;font-weight:700;margin-bottom:10px">Evaluation Progress</h3>';
+  html += '<div class="eval-labels"><span class="' + (totalHumanPnl >= 0 ? "green" : "red") + '">' + fmtDollarSigned(totalHumanPnl) + '</span><span class="gold">Goal: $' + evalGoal.toLocaleString() + '</span></div>';
+  html += '<div class="eval-bar-bg"><div class="eval-bar-fill" style="width:' + evalPct.toFixed(1) + '%;background:' + evalColor + '"></div></div>';
+  html += '<div class="eval-pct">' + evalPct.toFixed(1) + '%</div>';
+  html += '<h3 style="color:#f0f0f0;font-size:16px;font-weight:700;margin-top:24px;margin-bottom:10px">Account Failure</h3>';
+  html += '<div class="eval-labels"><span class="' + (currentDrawdown > 0 ? "red" : "green") + '">Drawdown: ' + fmtDollar(currentDrawdown) + '</span><span class="red">Limit: -$' + failLimit.toLocaleString() + '</span></div>';
+  html += '<div class="eval-bar-bg"><div class="eval-bar-fill" style="width:' + failPct.toFixed(1) + '%;background:' + failColor + '"></div></div>';
+  html += '<div class="eval-pct">' + failPct.toFixed(1) + '%</div>';
+  html += '</div></div>';
+
+  // ===== LEADERBOARD =====
+  html += '<div class="section"><div class="section-header"><h2>Leaderboard</h2></div><div class="leaderboard">';
+  html += '<div class="lb-row lb-header"><div>Rank</div><div></div><div>Player</div><div>Trades</div><div>Win %</div><div>W/L</div><div>P&L</div><div>vs Random</div></div>';
+  sorted.forEach(function(p, i) {
+    var wr = p.trades > 0 ? (p.wins / p.trades * 100).toFixed(0) : 0;
+    var rc = i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : "";
+    var diff = p.pnl - p.randomPnl;
+    html += '<div class="lb-row">';
+    html += '<div class="rank ' + rc + '">#' + (i + 1) + '</div>';
+    html += '<div><img src="' + avatarUrl(p.name) + '" class="avatar"></div>';
+    html += '<div class="player-name clickable" onclick="showPlayerModal(\'' + p.name + '\')">' + p.name + '</div>';
+    html += '<div>' + p.trades + '</div>';
+    html += '<div class="bar-container"><div class="bar win" style="width:' + wr + 'px"></div><div class="bar loss" style="width:' + (100 - wr) + 'px"></div><span style="margin-left:6px;font-size:12px">' + wr + '%</span></div>';
+    html += '<div><span class="green">' + p.wins + '</span>/<span class="red">' + p.losses + '</span></div>';
+    html += '<div class="pnl ' + (p.pnl >= 0 ? "green" : "red") + '">' + fmtDollar(p.pnl) + '</div>';
+    html += '<div class="pnl ' + (diff >= 0 ? "green" : "red") + '">' + fmtDollarSigned(diff) + '</div>';
+    html += '</div>';
+  });
+  html += "</div></div>";
+
+  // Player cards are shown via modal when clicking a name in the leaderboard
+
+  // ===== RECENT TRADES =====
+  html += '<div class="section"><div class="section-header"><h2>Recent Trades</h2></div><div class="trades-table">';
+  html += '<div class="tt-row tt-header"><div>Player</div><div>Date</div><div>Time</div><div>Direction</div><div>Result</div><div>Entry</div><div>Exit</div><div>P&L</div></div>';
+  var recent = trades.slice().reverse().slice(0, 50);
+  recent.forEach(function(t) {
+    html += '<div class="tt-row">';
+    html += '<div class="trade-player clickable" onclick="showPlayerModal(\'' + t.player + '\')"><img src="' + avatarUrl(t.player) + '" class="avatar-sm">' + t.player + '</div>';
+    html += '<div>' + t.date + '</div>';
+    html += '<div>' + fmtTime(t.time) + '</div>';
+    html += '<div><span class="badge ' + (t.direction === "LONG" ? "long" : "short") + '">' + t.direction + '</span></div>';
+    html += '<div><span class="badge ' + (t.pnl >= 0 ? "win" : "loss") + '">' + (t.pnl >= 0 ? "WIN" : "LOSS") + '</span></div>';
+    html += '<div>' + t.entryPrice + '</div>';
+    html += '<div>' + t.exitPrice + '</div>';
+    html += '<div class="' + (t.pnl >= 0 ? "green" : "red") + '">' + fmtDollar(t.pnl) + '</div>';
+    html += '</div>';
+  });
+  html += "</div></div>";
+
+  document.getElementById("app").innerHTML = html;
+}
+
+function avatarUrl(name) {
+  return "images/" + name.toLowerCase() + ".jpg";
+}
+
+function fmtDollar(val) {
+  return (val < 0 ? "-$" : "$") + Math.abs(val).toFixed(2);
+}
+
+function fmtDollarSigned(val) {
+  return (val >= 0 ? "+$" : "-$") + Math.abs(val).toFixed(2);
+}
+
+function statCard(label, value, colorClass, sub) {
+  return '<div class="stat-card"><div class="label">' + label + '</div><div class="value ' + colorClass + '">' + value + '</div><div class="sub">' + sub + '</div></div>';
+}
+
+function pStat(label, value, cls) {
+  return '<div><div class="p-stat-label">' + label + '</div><div class="p-stat-value ' + cls + '">' + value + '</div></div>';
+}
+
+// Store players globally for modal access
+var globalPlayers = {};
+
+function fmtTime(t) {
+  if (!t) return "";
+  var s = String(t);
+  // Handle ISO date format like 1899-12-30T16:34:37.000Z
+  if (s.indexOf("T") !== -1) {
+    var timePart = s.split("T")[1];
+    if (timePart) {
+      var bits = timePart.replace("Z","").split(":");
+      if (bits.length >= 2) {
+        var h = parseInt(bits[0]);
+        var m = bits[1];
+        var sec = bits.length >= 3 ? bits[2].split(".")[0] : "00";
+        var ampm = h >= 12 ? "PM" : "AM";
+        h = h % 12 || 12;
+        return h + ":" + m + ":" + sec + " " + ampm;
+      }
+    }
+  }
+  // Handle HH:MM:SS format
+  if (s.indexOf(":") !== -1 && s.indexOf("T") === -1) {
+    var bits = s.split(":");
+    if (bits.length >= 2) {
+      var h = parseInt(bits[0]);
+      var m = bits[1];
+      var sec = bits.length >= 3 ? bits[2] : "00";
+      var ampm = h >= 12 ? "PM" : "AM";
+      h = h % 12 || 12;
+      return h + ":" + m + ":" + sec + " " + ampm;
+    }
+  }
+  return s;
+}
+
+function showPlayerModal(name) {
+  var p = globalPlayers[name];
+  if (!p) return;
+  var wr = p.trades > 0 ? (p.wins / p.trades * 100).toFixed(0) : 0;
+  var avgPnl = p.trades > 0 ? (p.pnl / p.trades) : 0;
+  var diff = p.pnl - p.randomPnl;
+  var streakStr = p.streak > 0 ? p.streak + "W" : (p.streak < 0 ? Math.abs(p.streak) + "L" : "-");
+  var streakCls = p.streak > 0 ? "green" : (p.streak < 0 ? "red" : "white");
+  var longPct = p.trades > 0 ? (p.longs / p.trades * 100).toFixed(0) : 50;
+
+  var m = document.getElementById("playerModal");
+  var mc = document.getElementById("modalContent");
+  var html = '';
+  html += '<div style="display:flex;align-items:center;gap:16px;margin-bottom:4px"><img src="' + avatarUrl(p.name) + '" class="avatar-modal"><h2>' + p.name + '</h2></div>';
+  html += '<div class="modal-pnl ' + (p.pnl >= 0 ? "green" : "red") + '">' + fmtDollarSigned(p.pnl) + '</div>';
+  html += '<div class="modal-stats">';
+  html += pStat("Win Rate", wr + "%", parseFloat(wr) >= 50 ? "green" : "red");
+  html += pStat("Trades", p.trades, "white");
+  html += pStat("Avg P&L", fmtDollar(avgPnl), avgPnl >= 0 ? "green" : "red");
+  html += pStat("Streak", streakStr, streakCls);
+  html += pStat("Best Day", fmtDollarSigned(p.bestDay || 0), (p.bestDay || 0) >= 0 ? "green" : "red");
+  html += pStat("Worst Day", fmtDollarSigned(p.worstDay || 0), (p.worstDay || 0) >= 0 ? "green" : "red");
+  html += pStat("vs Random", fmtDollarSigned(diff), diff >= 0 ? "green" : "red");
+  html += pStat("Long / Short", longPct + "% / " + (100 - longPct) + "%", "blue");
+  html += '</div>';
+  html += '<div class="modal-bar"><div class="win" style="width:' + wr + '%"></div><div class="loss" style="width:' + (100 - wr) + '%"></div></div>';
+  mc.innerHTML = html;
+  m.classList.add("active");
+}
+
+function closeModal() {
+  document.getElementById("playerModal").classList.remove("active");
+}
+
+// Initial load
+fetchData();
+</script>
+
+<div class="modal-overlay" id="playerModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+</body>
+</html>
