@@ -72,7 +72,7 @@ body { font-family:"Inter",sans-serif; background:#0a0e17; color:#e0e0e0; min-he
 
 /* Trades table */
 .trades-table { background:#141829; border:1px solid #1e2740; border-radius:16px; overflow:hidden; max-height:500px; overflow-y:auto; }
-.tt-row { display:grid; grid-template-columns:160px 100px 80px 80px 80px 100px 100px 100px; padding:10px 20px; border-bottom:1px solid #1e2740; font-size:13px; align-items:center; }
+.tt-row { display:grid; grid-template-columns:160px 100px 80px 80px 80px 100px 100px 100px 110px; padding:10px 20px; border-bottom:1px solid #1e2740; font-size:13px; align-items:center; }
 .tt-header { background:#0d1225; font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:1px; font-weight:600; position:sticky; top:0; z-index:1; }
 .badge { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; display:inline-block; }
 .badge.win { background:rgba(52,211,153,0.15); color:#34d399; }
@@ -354,9 +354,21 @@ function renderDashboard(trades) {
 
   // ===== RECENT TRADES =====
   html += '<div class="section"><div class="section-header"><h2>Recent Trades</h2></div><div class="trades-table">';
-  html += '<div class="tt-row tt-header"><div>Player</div><div>Date</div><div>Time</div><div>Direction</div><div>Result</div><div>Entry</div><div>Exit</div><div>P&L</div></div>';
-  var recent = trades.slice().reverse().slice(0, 50);
-  recent.forEach(function(t) {
+  html += '<div class="tt-row tt-header"><div>Player</div><div>Date</div><div>Time</div><div>Direction</div><div>Result</div><div>Entry</div><div>Exit</div><div>P&L</div><div>Balance</div></div>';
+  // Calculate running balance for all trades (chronological), then display recent
+  var runningBalance = 50000;
+  var balanceByIndex = [];
+  for (var bi = 0; bi < trades.length; bi++) {
+    runningBalance += trades[bi].pnl;
+    balanceByIndex.push(runningBalance);
+  }
+  var recent = [];
+  for (var ri = trades.length - 1; ri >= 0 && recent.length < 50; ri--) {
+    recent.push({ trade: trades[ri], balance: balanceByIndex[ri] });
+  }
+  recent.forEach(function(item) {
+    var t = item.trade;
+    var bal = item.balance;
     html += '<div class="tt-row">';
     html += '<div class="trade-player clickable" onclick="showPlayerModal(\'' + t.player + '\')"><img src="' + avatarUrl(t.player) + '" class="avatar-sm">' + t.player + '</div>';
     html += '<div>' + t.date + '</div>';
@@ -366,6 +378,7 @@ function renderDashboard(trades) {
     html += '<div>' + t.entryPrice + '</div>';
     html += '<div>' + t.exitPrice + '</div>';
     html += '<div class="' + (t.pnl >= 0 ? "green" : "red") + '">' + fmtDollar(t.pnl) + '</div>';
+    html += '<div class="' + (bal >= 50000 ? "green" : "red") + '">$' + bal.toFixed(2) + '</div>';
     html += '</div>';
   });
   html += "</div></div>";
