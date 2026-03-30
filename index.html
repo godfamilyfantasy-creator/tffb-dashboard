@@ -250,16 +250,29 @@ function renderDashboard(trades) {
 
   // ===== CHAMPION BANNER =====
   if (sorted.length > 0) {
-    var champ = sorted[0];
-    var champWr = champ.trades > 0 ? (champ.wins / champ.trades * 100).toFixed(0) : 0;
-    html += '<div class="champion-banner clickable" onclick="showPlayerModal(\'' + champ.name + '\')">';
+    var topPnl = sorted[0].pnl;
+    var champions = sorted.filter(function(p) { return Math.abs(p.pnl - topPnl) < 0.01; });
+    var isTied = champions.length > 1;
+    var champNames = champions.map(function(c) { return c.name; }).join(" & ");
+    html += '<div class="champion-banner clickable" onclick="showPlayerModal(\'' + champions[0].name + '\')">';
     html += '<div class="champ-layout">';
-    html += '<img src="' + avatarUrl(champ.name) + '" class="champ-avatar">';
+    champions.forEach(function(champ, ci) {
+      if (ci > 0) html += '<img src="' + avatarUrl(champ.name) + '" class="champ-avatar" style="margin-left:-20px">';
+      else html += '<img src="' + avatarUrl(champ.name) + '" class="champ-avatar">';
+    });
     html += '<div class="champ-info">';
-    html += '<div class="champ-label"><span class="crown-icon">\uD83D\uDC51</span>Current Champion</div>';
-    html += '<div class="champ-name">' + champ.name + '</div>';
-    html += '<div class="champ-pnl ' + (champ.pnl >= 0 ? "green" : "red") + '">' + fmtDollarSigned(champ.pnl) + '</div>';
-    html += '<div class="champ-stats"><span>' + champ.trades + ' trades</span><span>' + champWr + '% win rate</span><span>' + champ.wins + 'W / ' + champ.losses + 'L</span></div>';
+    html += '<div class="champ-label"><span class="crown-icon">\uD83D\uDC51</span>' + (isTied ? "Co-Champions" : "Current Champion") + '</div>';
+    html += '<div class="champ-name">' + champNames + '</div>';
+    html += '<div class="champ-pnl ' + (topPnl >= 0 ? "green" : "red") + '">' + fmtDollarSigned(topPnl) + '</div>';
+    var totalTrades = champions.reduce(function(s,c){return s+c.trades;},0);
+    var totalWins = champions.reduce(function(s,c){return s+c.wins;},0);
+    var totalLosses = champions.reduce(function(s,c){return s+c.losses;},0);
+    var champWr = totalTrades > 0 ? (totalWins / totalTrades * 100).toFixed(0) : 0;
+    if (isTied) {
+      html += '<div class="champ-stats"><span>Tied at ' + fmtDollarSigned(topPnl) + '</span></div>';
+    } else {
+      html += '<div class="champ-stats"><span>' + totalTrades + ' trades</span><span>' + champWr + '% win rate</span><span>' + totalWins + 'W / ' + totalLosses + 'L</span></div>';
+    }
     html += '</div></div></div>';
   }
 
