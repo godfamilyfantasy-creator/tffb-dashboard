@@ -333,12 +333,14 @@ function renderDashboard(trades) {
   // ===== LEADERBOARD =====
   html += '<div class="section"><div class="section-header"><h2>Leaderboard</h2></div><div class="leaderboard">';
   html += '<div class="lb-row lb-header"><div>Rank</div><div></div><div>Player</div><div>Trades</div><div>Win %</div><div>W/L</div><div>P&L</div><div>vs Random</div></div>';
+  var currentRank = 1;
   sorted.forEach(function(p, i) {
+    if (i > 0 && Math.abs(p.pnl - sorted[i - 1].pnl) > 0.01) currentRank = i + 1;
     var wr = p.trades > 0 ? (p.wins / p.trades * 100).toFixed(0) : 0;
-    var rc = i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : "";
+    var rc = currentRank === 1 ? "gold" : currentRank === 2 ? "silver" : currentRank === 3 ? "bronze" : "";
     var diff = p.pnl - p.randomPnl;
     html += '<div class="lb-row">';
-    html += '<div class="rank ' + rc + '">#' + (i + 1) + '</div>';
+    html += '<div class="rank ' + rc + '">#' + currentRank + '</div>';
     html += '<div><img src="' + avatarUrl(p.name) + '" class="avatar"></div>';
     html += '<div class="player-name clickable" onclick="showPlayerModal(\'' + p.name + '\')">' + p.name + '</div>';
     html += '<div>' + p.trades + '</div>';
