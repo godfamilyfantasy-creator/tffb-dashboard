@@ -256,41 +256,21 @@ function renderDashboard(trades) {
 
     if (isTied) {
       html += '<div class="champion-banner" style="cursor:default">';
-      html += '<div style="display:flex;align-items:center;justify-content:center;gap:0;position:relative;z-index:1">';
-      // Left champion
-      var c1 = champions[0]; var c1Wr = c1.trades > 0 ? (c1.wins / c1.trades * 100).toFixed(0) : 0;
-      html += '<div class="champ-layout clickable" onclick="showPlayerModal(\'' + c1.name + '\')" style="flex:1;justify-content:flex-end">';
-      html += '<div class="champ-info" style="text-align:right">';
-      html += '<div class="champ-label"><span class="crown-icon">\uD83D\uDC51</span>Co-Champion</div>';
-      html += '<div class="champ-name">' + c1.name + '</div>';
-      html += '<div class="champ-pnl ' + (c1.pnl >= 0 ? "green" : "red") + '">' + fmtDollarSigned(c1.pnl) + '</div>';
-      html += '<div class="champ-stats" style="justify-content:flex-end"><span>' + c1.trades + ' trades</span><span>' + c1Wr + '% win rate</span><span>' + c1.wins + 'W / ' + c1.losses + 'L</span></div>';
-      html += '</div>';
-      html += '<img src="' + avatarUrl(c1.name) + '" class="champ-avatar">';
-      html += '</div>';
-      // Handshake divider
-      html += '<div style="font-size:48px;padding:0 24px;flex-shrink:0">\uD83E\uDD1D</div>';
-      // Right champion
-      var c2 = champions[1]; var c2Wr = c2.trades > 0 ? (c2.wins / c2.trades * 100).toFixed(0) : 0;
-      html += '<div class="champ-layout clickable" onclick="showPlayerModal(\'' + c2.name + '\')" style="flex:1;justify-content:flex-start">';
-      html += '<img src="' + avatarUrl(c2.name) + '" class="champ-avatar">';
-      html += '<div class="champ-info" style="text-align:left">';
-      html += '<div class="champ-label">Co-Champion <span class="crown-icon">\uD83D\uDC51</span></div>';
-      html += '<div class="champ-name">' + c2.name + '</div>';
-      html += '<div class="champ-pnl ' + (c2.pnl >= 0 ? "green" : "red") + '">' + fmtDollarSigned(c2.pnl) + '</div>';
-      html += '<div class="champ-stats"><span>' + c2.trades + ' trades</span><span>' + c2Wr + '% win rate</span><span>' + c2.wins + 'W / ' + c2.losses + 'L</span></div>';
-      html += '</div>';
-      html += '</div>';
-      // If more than 2 tied, show additional names
-      if (champions.length > 2) {
-        html += '<div style="text-align:center;color:#6b7280;font-size:13px;margin-top:8px;position:relative;z-index:1">Also tied: ';
-        for (var ci = 2; ci < champions.length; ci++) {
-          if (ci > 2) html += ', ';
-          html += '<span class="clickable" onclick="showPlayerModal(\'' + champions[ci].name + '\')">' + champions[ci].name + '</span>';
-        }
+      html += '<div class="champ-label" style="text-align:center;margin-bottom:16px;position:relative;z-index:1"><span class="crown-icon">\uD83D\uDC51</span>Co-Champions<span class="crown-icon">\uD83D\uDC51</span></div>';
+      html += '<div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0;position:relative;z-index:1">';
+      champions.forEach(function(c, ci) {
+        if (ci > 0) html += '<div style="font-size:40px;padding:0 16px;flex-shrink:0">\uD83E\uDD1D</div>';
+        html += '<div style="display:flex;flex-direction:column;align-items:center;gap:8px">';
+        html += '<img src="' + avatarUrl(c.name) + '" class="champ-avatar">';
+        html += '<div class="champ-name">' + c.name + '</div>';
         html += '</div>';
-      }
-      html += '</div></div>';
+      });
+      html += '</div>';
+      html += '<div style="text-align:center;margin-top:12px;position:relative;z-index:1">';
+      html += '<div class="champ-pnl ' + (topPnl >= 0 ? "green" : "red") + '">' + fmtDollarSigned(topPnl) + '</div>';
+      html += '<div class="champ-stats" style="justify-content:center"><span>' + champions.length + ' players tied</span></div>';
+      html += '</div>';
+      html += '</div>';
     } else {
       var champ = sorted[0];
       var champWr = champ.trades > 0 ? (champ.wins / champ.trades * 100).toFixed(0) : 0;
